@@ -4,7 +4,7 @@ orbs:
   go: circleci/go@1.8.0
 
 jobs:
-  build-and-test:
+  build:
     docker:
       - image: cimg/go:1.25
     steps:
@@ -14,12 +14,36 @@ jobs:
       - run:
           name: Build
           command: go build -o bin/server ./cmd/server
+
+  test:
+    docker:
+      - image: cimg/go:1.25
+    steps:
+      - checkout
+      - go/load-cache
+      - go/mod-download
       - run:
           name: Run tests
           command: go test -v ./...
+
+  vet:
+    docker:
+      - image: cimg/go:1.25
+    steps:
+      - checkout
+      - go/load-cache
+      - go/mod-download
       - run:
           name: Run vet
           command: go vet ./...
+
+  format:
+    docker:
+      - image: cimg/go:1.25
+    steps:
+      - checkout
+      - go/load-cache
+      - go/mod-download
       - run:
           name: Check formatting
           command: gofmt -l .
@@ -27,4 +51,13 @@ jobs:
 workflows:
   build-and-test-workflow:
     jobs:
-      - build-and-test
+      - build
+      - test:
+          requires:
+            - build
+      - vet:
+          requires:
+            - build
+      - format:
+          requires:
+            - build
