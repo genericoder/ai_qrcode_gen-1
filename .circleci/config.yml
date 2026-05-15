@@ -1,0 +1,30 @@
+version: 2.1
+
+orbs:
+  go: circleci/go@1.8.0
+
+jobs:
+  build-and-test:
+    docker:
+      - image: cimg/go:1.25
+    steps:
+      - checkout
+      - go/load-cache
+      - go/mod-download
+      - run:
+          name: Build
+          command: go build -o bin/server ./cmd/server
+      - run:
+          name: Run tests
+          command: go test -v ./...
+      - run:
+          name: Run vet
+          command: go vet ./...
+      - run:
+          name: Check formatting
+          command: gofmt -l .
+
+workflows:
+  build-and-test-workflow:
+    jobs:
+      - build-and-test
