@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -13,13 +15,9 @@ import (
 )
 
 func main() {
-	// Initialize services
 	qrService := service.NewQRService()
-
-	// Initialize handlers
 	qrHandler := handler.NewQRHandler(qrService)
 
-	// Create Fiber app
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			code := fiber.StatusInternalServerError
@@ -32,17 +30,25 @@ func main() {
 		},
 	})
 
-	// Middleware
 	app.Use(recover.New())
 	app.Use(logger.New())
-	app.Use(cors.New())
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "*",
+		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
+		AllowHeaders: "Content-Type,Authorization",
+	}))
 
-	// Routes
-	app.Get("/", qrHandler.Index)
+	app.Get("/", func(c *fiber.Ctx) error {
+		workDir, _ := os.Getwd()
+		frontendPath := filepath.Join(workDir, "frontend", "dist")
+		return c.SendFile(frontendPath + "/index.html")
+	})
+
+	app.Static("/", filepath.Join("frontend", "dist"))
+
 	app.Post("/api/generate", qrHandler.GenerateQR)
 	app.Get("/health", qrHandler.Health)
 
-	// Start server
 	log.Println("Server starting on :9999")
 	if err := app.Listen(":9999"); err != nil {
 		log.Fatal(err)
