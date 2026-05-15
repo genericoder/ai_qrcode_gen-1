@@ -35,9 +35,20 @@ func (h *QRHandler) GenerateQR(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.JSON(model.QRResponse{
-		Success: true,
-		Data:    req.Content,
+	image, err := h.qrService.GenerateQR(req.Content)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(model.QRResponse{
+			Success: false,
+			Message: "Failed to generate QR code",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"data": fiber.Map{
+			"content": req.Content,
+			"image":   image,
+		},
 	})
 }
 

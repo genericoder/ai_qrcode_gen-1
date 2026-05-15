@@ -1,17 +1,16 @@
 import { useState } from 'react'
-import { QRCodeCanvas } from 'qrcode.react'
 import './App.css'
 
 function App() {
   const [content, setContent] = useState('')
-  const [qrData, setQrData] = useState('')
+  const [qrImage, setQrImage] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
   const generateQR = async () => {
     setError('')
     setSuccess('')
-    setQrData('')
+    setQrImage('')
 
     if (!content.trim()) {
       setError('Please enter some content')
@@ -26,8 +25,8 @@ function App() {
       })
       const data = await response.json()
 
-      if (data.success) {
-        setQrData(data.data)
+      if (data.success && data.data && data.data.image) {
+        setQrImage(data.data.image)
         setSuccess('QR Code generated successfully!')
       } else {
         setError(data.message || 'Failed to generate QR code')
@@ -59,9 +58,9 @@ function App() {
       </div>
       <button onClick={generateQR}>Generate QR Code</button>
       <div id="result">
-        {qrData && (
+        {qrImage && (
           <div id="qrcode">
-            <QRCodeCanvas value={qrData} size={300} level="H" />
+            <img src={`data:image/png;base64,${qrImage}`} alt="QR Code" />
           </div>
         )}
         {error && <p className="error">{error}</p>}
