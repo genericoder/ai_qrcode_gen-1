@@ -15,10 +15,6 @@ func NewQRHandler(qrService *service.QRService) *QRHandler {
 	return &QRHandler{qrService: qrService}
 }
 
-func (h *QRHandler) Index(c *fiber.Ctx) error {
-	return c.SendString("QR Generator API is running. Use the frontend app.")
-}
-
 func (h *QRHandler) GenerateQR(c *fiber.Ctx) error {
 	var req model.QRRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -43,15 +39,15 @@ func (h *QRHandler) GenerateQR(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.JSON(fiber.Map{
-		"success": true,
-		"data": fiber.Map{
-			"content": req.Content,
-			"image":   image,
+	return c.JSON(model.QRResponse{
+		Success: true,
+		Data: &model.QRData{
+			Content: req.Content,
+			Image:   image,
 		},
 	})
 }
 
 func (h *QRHandler) Health(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{"status": "ok"})
+	return c.JSON(map[string]string{"status": "ok"})
 }

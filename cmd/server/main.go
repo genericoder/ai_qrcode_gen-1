@@ -24,24 +24,32 @@ func main() {
 			if e, ok := err.(*fiber.Error); ok {
 				code = e.Code
 			}
+			log.Printf("error: %v", err)
 			return c.Status(code).JSON(fiber.Map{
-				"error": err.Error(),
+				"error": "internal server error",
 			})
 		},
 	})
 
 	app.Use(recover.New())
 	app.Use(logger.New())
+
+	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+	if allowedOrigins == "" {
+		allowedOrigins = "http://localhost:5173,http://localhost:9999"
+	}
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
-		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
-		AllowHeaders: "Content-Type,Authorization",
+		AllowOrigins: allowedOrigins,
+		AllowMethods: "GET,POST,OPTIONS",
+		AllowHeaders: "Content-Type",
 	}))
 
 	app.Get("/", func(c *fiber.Ctx) error {
-		workDir, _ := os.Getwd()
-		frontendPath := filepath.Join(workDir, "frontend", "dist")
-		return c.SendFile(frontendPath + "/index.html")
+		workDir, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		return c.SendFile(filepath.Join(workDir, "frontend", "dist", "index.html"))
 	})
 
 	app.Static("/", filepath.Join("frontend", "dist"))
@@ -49,8 +57,12 @@ func main() {
 	app.Post("/api/generate", qrHandler.GenerateQR)
 	app.Get("/health", qrHandler.Health)
 
-	log.Println("Server starting on :9999")
-	if err := app.Listen(":9999"); err != nil {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "9999"
+	}
+	log.Printf("Server starting on :%s", port)
+	if err := app.Listen(":" + port); err != nil {
 		log.Fatal(err)
 	}
 }

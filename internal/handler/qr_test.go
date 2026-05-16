@@ -21,28 +21,6 @@ func TestNewQRHandler(t *testing.T) {
 	}
 }
 
-func TestIndex(t *testing.T) {
-	app := fiber.New()
-	qrService := service.NewQRService()
-	qrHandler := NewQRHandler(qrService)
-
-	app.Get("/", qrHandler.Index)
-
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	resp, err := app.Test(req)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if resp.StatusCode != fiber.StatusOK {
-		t.Errorf("Expected status %d, got %d", fiber.StatusOK, resp.StatusCode)
-	}
-
-	contentType := resp.Header.Get("Content-Type")
-	if contentType != "text/html" {
-		t.Errorf("Expected content-type text/html, got %s", contentType)
-	}
-}
 
 func TestGenerateQR_Success(t *testing.T) {
 	app := fiber.New()
@@ -52,7 +30,10 @@ func TestGenerateQR_Success(t *testing.T) {
 	app.Post("/api/generate", qrHandler.GenerateQR)
 
 	reqBody := model.QRRequest{Content: "https://example.com"}
-	body, _ := json.Marshal(reqBody)
+	body, err := json.Marshal(reqBody)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	req := httptest.NewRequest(http.MethodPost, "/api/generate", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -66,13 +47,21 @@ func TestGenerateQR_Success(t *testing.T) {
 	}
 
 	var respBody model.QRResponse
-	json.NewDecoder(resp.Body).Decode(&respBody)
+	if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
+		t.Fatal(err)
+	}
 
 	if !respBody.Success {
 		t.Error("Expected success to be true")
 	}
-	if respBody.Data != "https://example.com" {
-		t.Errorf("Expected data to be 'https://example.com', got %s", respBody.Data)
+	if respBody.Data == nil {
+		t.Fatal("Expected data to be non-nil")
+	}
+	if respBody.Data.Content != "https://example.com" {
+		t.Errorf("Expected data.content to be 'https://example.com', got %s", respBody.Data.Content)
+	}
+	if respBody.Data.Image == "" {
+		t.Error("Expected data.image to be non-empty")
 	}
 }
 
@@ -110,7 +99,10 @@ func TestGenerateQR_EmptyContent(t *testing.T) {
 	app.Post("/api/generate", qrHandler.GenerateQR)
 
 	reqBody := model.QRRequest{Content: ""}
-	body, _ := json.Marshal(reqBody)
+	body, err := json.Marshal(reqBody)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	req := httptest.NewRequest(http.MethodPost, "/api/generate", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -124,7 +116,9 @@ func TestGenerateQR_EmptyContent(t *testing.T) {
 	}
 
 	var respBody model.QRResponse
-	json.NewDecoder(resp.Body).Decode(&respBody)
+	if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
+		t.Fatal(err)
+	}
 
 	if respBody.Success {
 		t.Error("Expected success to be false")
