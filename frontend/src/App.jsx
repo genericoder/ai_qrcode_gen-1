@@ -33,7 +33,7 @@ function App() {
       } else {
         setError(data.message || 'Failed to generate QR code')
       }
-    } catch (err) {
+    } catch {
       setError('Failed to connect to server. Make sure the server is running.')
     }
   }
