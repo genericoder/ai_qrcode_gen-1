@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -15,6 +15,12 @@ import (
 )
 
 func main() {
+	level := slog.LevelInfo
+	if os.Getenv("LOG_LEVEL") == "debug" {
+		level = slog.LevelDebug
+	}
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})))
+
 	qrService := service.NewQRService()
 	qrHandler := handler.NewQRHandler(qrService)
 
@@ -23,25 +29,37 @@ func main() {
 			code := fiber.StatusInternalServerError
 			if e, ok := err.(*fiber.Error); ok {
 				code = e.Code
+				slog.Warn("http error", "status", code, "path", c.Path(), "error", err)
+			} else {
+				slog.Error("unhandled error", "status", code, "path", c.Path(), "error", err)
 			}
 			return c.Status(code).JSON(fiber.Map{
-				"error": err.Error(),
+				"error": "internal server error",
 			})
 		},
 	})
 
 	app.Use(recover.New())
 	app.Use(logger.New())
+
+	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+	if allowedOrigins == "" {
+		allowedOrigins = "http://localhost:5173,http://localhost:9999"
+	}
+	slog.Info("CORS configured", "origins", allowedOrigins)
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
-		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
-		AllowHeaders: "Content-Type,Authorization",
+		AllowOrigins: allowedOrigins,
+		AllowMethods: "GET,POST,OPTIONS",
+		AllowHeaders: "Content-Type",
 	}))
 
 	app.Get("/", func(c *fiber.Ctx) error {
-		workDir, _ := os.Getwd()
-		frontendPath := filepath.Join(workDir, "frontend", "dist")
-		return c.SendFile(frontendPath + "/index.html")
+		workDir, err := os.Getwd()
+		if err != nil {
+			slog.Error("failed to get working directory", "error", err)
+			return err
+		}
+		return c.SendFile(filepath.Join(workDir, "frontend", "dist", "index.html"))
 	})
 
 	app.Static("/", filepath.Join("frontend", "dist"))
@@ -49,8 +67,13 @@ func main() {
 	app.Post("/api/generate", qrHandler.GenerateQR)
 	app.Get("/health", qrHandler.Health)
 
-	log.Println("Server starting on :9999")
-	if err := app.Listen(":9999"); err != nil {
-		log.Fatal(err)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "9999"
+	}
+	slog.Info("server starting", "port", port)
+	if err := app.Listen(":" + port); err != nil {
+		slog.Error("server failed to start", "error", err)
+		os.Exit(1)
 	}
 }

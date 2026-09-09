@@ -1,8 +1,9 @@
 package service
 
 import (
-	"errors"
 	"encoding/base64"
+	"errors"
+	"log/slog"
 
 	"github.com/skip2/go-qrcode"
 )
@@ -24,9 +25,11 @@ func (s *QRService) ValidateContent(content string) error {
 }
 
 func (s *QRService) GenerateQR(content string) (string, error) {
+	slog.Debug("encoding QR code", "content_length", len(content))
 	png, err := qrcode.Encode(content, qrcode.Medium, 256)
 	if err != nil {
 		return "", err
 	}
+	slog.Debug("QR code encoded successfully", "content_length", len(content), "png_bytes", len(png))
 	return base64.StdEncoding.EncodeToString(png), nil
 }

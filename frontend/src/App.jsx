@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import './App.css'
 
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:9999'
+
 function App() {
   const [content, setContent] = useState('')
   const [qrImage, setQrImage] = useState('')
@@ -18,7 +20,7 @@ function App() {
     }
 
     try {
-      const response = await fetch('http://localhost:9999/api/generate', {
+      const response = await fetch(`${API_URL}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),
@@ -31,7 +33,7 @@ function App() {
       } else {
         setError(data.message || 'Failed to generate QR code')
       }
-    } catch (err) {
+    } catch {
       setError('Failed to connect to server. Make sure the server is running.')
     }
   }
