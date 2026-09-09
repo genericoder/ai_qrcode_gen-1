@@ -70,6 +70,8 @@ func TestGenerateQR(t *testing.T) {
 		{name: "plain text", content: "Hello World", wantErr: false},
 		{name: "single character", content: "a", wantErr: false},
 		{name: "long content", content: strings.Repeat("a", 1000), wantErr: false},
+		{name: "empty content", content: "", wantErr: true},
+		{name: "too long for QR capacity", content: strings.Repeat("a", 4097), wantErr: true},
 	}
 
 	for _, tt := range tests {

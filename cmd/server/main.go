@@ -29,8 +29,10 @@ func main() {
 			code := fiber.StatusInternalServerError
 			if e, ok := err.(*fiber.Error); ok {
 				code = e.Code
+				slog.Warn("http error", "status", code, "path", c.Path(), "error", err)
+			} else {
+				slog.Error("unhandled error", "status", code, "path", c.Path(), "error", err)
 			}
-			slog.Error("unhandled error", "status", code, "path", c.Path(), "error", err)
 			return c.Status(code).JSON(fiber.Map{
 				"error": "internal server error",
 			})

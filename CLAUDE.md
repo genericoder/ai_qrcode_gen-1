@@ -40,7 +40,7 @@ npm run preview  # preview production build
 
 ### Request Flow
 
-```
+```text
 User input → POST /api/generate → handler → service (validate + encode) → base64 PNG → frontend <img>
 ```
 
@@ -48,8 +48,8 @@ User input → POST /api/generate → handler → service (validate + encode) �
 
 - **handler/qr.go** — HTTP request parsing, response serialization, delegates to service
 - **service/qr.go** — validation (non-empty, ≤4096 chars) and QR generation via `go-qrcode` (Medium error correction, 256×256)
-- **model/qr.go** — `GenerateRequest` / `GenerateResponse` structs
-- **cmd/server/main.go** — Fiber setup: CORS (permissive), logger, error recovery, static file serving from `frontend/dist/`
+- **model/qr.go** — `QRRequest` / `QRResponse` structs
+- **cmd/server/main.go** — Fiber setup: CORS (origin allowlist via `ALLOWED_ORIGINS` env var), logger, error recovery, static file serving from `frontend/dist/`
 
 ### API
 
@@ -61,12 +61,12 @@ User input → POST /api/generate → handler → service (validate + encode) �
 
 ### Frontend
 
-Single component (`src/App.jsx`) manages all state with hooks. API base URL is hardcoded to `http://localhost:9999` — needs an env var for production.
+Single component (`src/App.jsx`) manages all state with hooks. API base URL is read from the `VITE_API_URL` environment variable (defaults to `http://localhost:9999`).
 
 ### Static file serving
 
-The backend serves `frontend/dist/` at the root. Build the frontend first (`npm run build`) before starting the backend if you want a unified server. In dev, run both servers separately (Vite on :5173, backend on :9999 with CORS open).
+The backend serves `frontend/dist/` at the root. Build the frontend first (`npm run build`) before starting the backend if you want a unified server. In dev, run both servers separately (Vite on :5173, backend on :9999); the default `ALLOWED_ORIGINS` allowlist covers both.
 
 ## Testing
 
-Tests cover handler (HTTP status codes, error cases) and service (validation boundaries, base64 output). CI runs build → test/vet/format in parallel (GitHub Actions, Go 1.25).
+Tests cover handler (HTTP status codes, error cases) and service (validation boundaries, base64 output). CI runs build, test, vet, and format in parallel (GitHub Actions, Go 1.25).

@@ -21,7 +21,6 @@ func TestNewQRHandler(t *testing.T) {
 	}
 }
 
-
 func TestGenerateQR_Success(t *testing.T) {
 	app := fiber.New()
 	qrService := service.NewQRService()
@@ -84,7 +83,9 @@ func TestGenerateQR_InvalidJSON(t *testing.T) {
 	}
 
 	var respBody model.QRResponse
-	json.NewDecoder(resp.Body).Decode(&respBody)
+	if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
+		t.Fatal(err)
+	}
 
 	if respBody.Success {
 		t.Error("Expected success to be false")

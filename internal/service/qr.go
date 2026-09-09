@@ -28,7 +28,6 @@ func (s *QRService) GenerateQR(content string) (string, error) {
 	slog.Debug("encoding QR code", "content_length", len(content))
 	png, err := qrcode.Encode(content, qrcode.Medium, 256)
 	if err != nil {
-		slog.Error("qrcode encode failed", "error", err, "content_length", len(content))
 		return "", err
 	}
 	slog.Debug("QR code encoded successfully", "content_length", len(content), "png_bytes", len(png))
